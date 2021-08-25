@@ -1,0 +1,77 @@
+---
+title: "Movie Data Correlation"
+author: "Konrad Gawel"
+date: "8/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+The following is a quick case study which  aims to explore movie data and find correlations between variables. Data can be found at https://www.kaggle.com/danielgrijalvas/movies
+
+
+## Load necessary libraries for data cleaning, exploration and visualization
+
+```{r}
+library(readr)
+library(tidyverse)
+library(stringr)
+library(ggplot2)
+library(janitor)
+library(lubridate)
+library(ggcorrplot)
+```
+
+## Import data
+
+```{r}
+movies_df_original = read_csv("movies.csv")
+```
+
+## Take a look and explore the data set
+
+```{r}
+head(movies_df_original)
+
+glimpse(movies_df_original)
+```
+
+## The "released" column and "year" column seem to differ for certain movies. Need to extract out only the "year" portion of the "released" column for consistency. Also arrange data frame by highest grossing movies
+
+```{r}
+movies_df <- movies_df_original %>% 
+  mutate(released_year = (str_extract(released,"\\d{4}"))) %>% 
+  arrange(desc(gross))
+```
+
+## Check for any duplicate rows
+
+```{r}
+movies_df %>% 
+  get_dupes(name, rating, genre, released)
+```
+
+## Make scatterplot of numeric variables to see potential correlation with gross revenue
+
+```{r}
+ggplot(movies_df, aes(x = budget, y = gross)) + 
+  geom_point() +
+  geom_smooth(method = lm, color = "red") +
+  ggtitle("Budget vs. Gross Earnings") +
+  labs(x = "Budget", y = "Gross Earnings") +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  scale_y_continuous(labels = scales::dollar_format())
+```
+
+## Calculate correlation of numerical variables and show as heat map. It appears that budget and votes have the highest correlation to gross earnings. 
+
+```{r}
+correlation_matrix <-  cor(movies_df[sapply(movies_df, is.numeric)], use = "pairwise.complete.obs")
+
+ggcorrplot(correlation_matrix)
+```
+
